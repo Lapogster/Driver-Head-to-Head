@@ -1,8 +1,10 @@
 import fastf1
 import streamlit as st
-from fastf1 import plotting
-import pandas as pd
+#from fastf1 import plotting
+#import pandas as pd
 import os
+import loadData
+import stTools
 
 currentSeason = 2026
 
@@ -27,81 +29,7 @@ if "drivenFor" not in st.session_state:
 if "selectedTeam" not in st.session_state:
     st.session_state.selectedTeam = None
 
-# Load Session data
-@st.cache_data
-def loadSession(year, race, session):
-    session = fastf1.get_session(year, race, session)
-    session.load(laps=False, telemetry=False, weather=False, messages=False, livedata=True)
 
-    return session
-
-def loadDriverHeadshot(session, driverNum):
-    sessionResult = session.results
-
-    headshot = sessionResult.loc[driverNum, "HeadshotUrl"]
-
-    if headshot == "":
-        return False
-
-    st.image(headshot)
-    return True
-
-@st.cache_data
-def loadTeams(year):
-    driverCounts = {}
-    drivenFor = {}
-    teamNames = []
-
-    for race in st.session_state.yearSessions:
-        driverI = 0
-        while driverI < len(race.results["TeamName"]):
-            team = race.results["TeamName"].iloc[driverI]
-            driver = race.results["FullName"].iloc[driverI]
-            driver = race.results["DriverId"].iloc[driverI]
-
-            if team not in teamNames:
-                teamNames.append(team)
-        
-            if team in driverCounts.keys():
-                if driver not in drivenFor[team]:
-                    driverCounts[team] += 1
-                    drivenFor[team].append(driver)
-            else:
-                driverCounts[team] = 1
-                drivenFor[team] = []
-                drivenFor[team].append(driver)
-
-            driverI += 1
-
-    st.session_state.loadedYear = year
-    st.session_state.driverCounts = driverCounts
-    st.session_state.teamNames = teamNames
-    st.session_state.drivenFor = drivenFor
-
-@st.cache_data(show_spinner="Downloading and caching season data | First load may take a few minutes...")
-def loadYear(year, _loadText):
-    st.session_state.yearSessions = []
-    schedule = loadSchedule(year)
-
-    for race in schedule:
-        loadText.text(f"Loading {race} data...")
-        st.session_state.yearSessions.append(loadSession(year, race, "R"))
-        loadText.text(f"{race} loading complete!")
-        loadText.empty()
-
-    loadTeams(year)
-
-    st.rerun()
-
-@st.cache_data
-def loadSchedule(year):
-    seasonRaces = []
-    schedule = fastf1.get_event_schedule(year)
-    for i, row in schedule.iterrows():
-        if (row["EventFormat"] != "testing"):
-            seasonRaces.append(row["EventName"])
-
-    return seasonRaces
 
 # Page display
 if st.session_state.page == "home":
@@ -116,7 +44,14 @@ if st.session_state.page == "home":
 
     if st.session_state.year != st.session_state.loadedYear:
         loadText = st.empty()
-        loadYear(st.session_state.year, loadText)
+        yearData = loadData.loadYear(st.session_state.year, loadText)
+        st.session_state.loadedYear = st.session_state.year
+        st.session_state.yearSessions = yearData[0]
+        st.session_state.loadedYear = yearData[1][0]
+        st.session_state.driverCounts = yearData[1][1]
+        st.session_state.teamNames = yearData[1][2]
+        st.session_state.drivenFor = yearData[1][3]
+        st.rerun()
 
     numTeams = len(st.session_state.teamNames)
     numTeamsCol1 = numTeams - int((len(st.session_state.teamNames)/2))
