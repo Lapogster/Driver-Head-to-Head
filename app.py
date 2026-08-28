@@ -76,16 +76,18 @@ def loadTeams(year):
     st.session_state.loadedYear = year
     st.session_state.driverCounts = driverCounts
     st.session_state.teamNames = teamNames
+    st.session_state.drivenFor = drivenFor
 
 @st.cache_data(show_spinner="Downloading and caching season data | First load may take a few minutes...")
-def loadYear(year):
+def loadYear(year, _loadText):
     st.session_state.yearSessions = []
     schedule = loadSchedule(year)
 
     for race in schedule:
-        st.text(f"Loading {race} data...")
+        loadText.text(f"Loading {race} data...")
         st.session_state.yearSessions.append(loadSession(year, race, "R"))
-        st.text(f"{race} loading complete!")
+        loadText.text(f"{race} loading complete!")
+        loadText.empty()
 
     loadTeams(year)
 
@@ -113,7 +115,8 @@ if st.session_state.page == "home":
     col1, col2 = st.columns(2)
 
     if st.session_state.year != st.session_state.loadedYear:
-        loadYear(st.session_state.year)
+        loadText = st.empty()
+        loadYear(st.session_state.year, loadText)
 
     numTeams = len(st.session_state.teamNames)
     numTeamsCol1 = numTeams - int((len(st.session_state.teamNames)/2))
@@ -127,7 +130,9 @@ if st.session_state.page == "home":
             j = 0
             while i <= numTeamsCol1:
                 if st.button(st.session_state.teamNames[j]):
-                    print(j)
+                    st.session_state.selectedTeam = st.session_state.teamNames[j]
+                    st.session_state.page = "teamView"
+                    st.rerun()
                 i += 1
                 j += 2
 
@@ -137,10 +142,22 @@ if st.session_state.page == "home":
             j = 1
             while i <= numTeamsCol2:
                 if st.button(st.session_state.teamNames[j]):
-                    print(j)
+                    st.session_state.selectedTeam = st.session_state.teamNames[j]
+                    st.session_state.page = "teamView"
+                    st.rerun()
                 i += 1
                 j += 2
 
 elif st.session_state.page == "teamView":
-    pass
+    columns = st.session_state.drivenFor[st.session_state.selectedTeam]
+    columns = st.columns(len(st.session_state.drivenFor[st.session_state.selectedTeam]))
+
+    driverI = 0
+    while driverI < len(columns):
+        with columns[driverI]:
+            st.session_state.drivenFor[st.session_state.selectedTeam][driverI]
+
+            driverI += 1
+
+            print(st.session_state.yearSessions[0].results)
         
