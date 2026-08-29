@@ -39,6 +39,7 @@ st.set_page_config(page_title="Teammate Head-to-Head", page_icon="🏁", layout=
 if st.session_state.page == "home":
     st.markdown("<h1 style='text-align: center;'>Teammate Head-to-Head</h1>", unsafe_allow_html=True)
 
+    # Make season select box in center
     c1, col2, c3 = st.columns(3)
     with col2:
         season = st.selectbox("Select a season", range(1950, currentSeason+1), (currentSeason-1950 - 1), accept_new_options=False)
@@ -47,6 +48,7 @@ if st.session_state.page == "home":
     st.markdown("<h2 style='text-align: center;'>Select a team to compare:</h2>", unsafe_allow_html=True)
     col1, col2, col3, col4, col5, col6 = st.columns(6)
 
+    # Load newly selected year
     if st.session_state.year != st.session_state.loadedYear:
         loadText = st.empty()
         yearData = loadData.loadYear(st.session_state.year, loadText)
@@ -58,10 +60,11 @@ if st.session_state.page == "home":
         st.session_state.drivenFor = yearData[1][3]
         st.rerun()
 
+    # Setup for teams display
     numTeams = len(st.session_state.teamNames)
     numTeamsCol1 = numTeams - int((len(st.session_state.teamNames)/2))
     numTeamsCol2 = int(len(st.session_state.teamNames)/2)
-
+    # Display all teams from year
     with col3:
         if numTeams < 1:
             st.text(f"Failed to load any races for the {st.session_state.loadedYear} season")
@@ -92,6 +95,7 @@ elif st.session_state.page == "teamView":
     columns = st.session_state.drivenFor[st.session_state.selectedTeam]
     columns = st.columns(len(st.session_state.drivenFor[st.session_state.selectedTeam]))
 
+    # Tally team points from races
     teamPoints = 0
     racePoints = 0
     sprintPoints = 0
@@ -100,26 +104,33 @@ elif st.session_state.page == "teamView":
         teamPoints += teamResults["Points"].sum()
         racePoints += teamResults["Points"].sum()
 
+    # Tally team points from sprints when they exist
     season = loadData.loadSchedule(st.session_state.loadedYear)
     loadingMessage = st.empty()
+    sprintCount = 0
     for session in season:
         try:
+            # Load each sprint
             stTools.loadingText("Loading Team Data...", loadingMessage)
             sprint = loadData.loadSession(st.session_state.loadedYear, session, "S")
             sprintPoints += sprint.results.loc[sprint.results["TeamName"] == st.session_state.selectedTeam, "Points"].sum()
             teamPoints += sprint.results.loc[sprint.results["TeamName"] == st.session_state.selectedTeam, "Points"].sum()
+            sprintCount += 1
         except ValueError:
             # Race has no sprint
             pass
 
+    # Clearing loading text
     with loadingMessage:
         st.empty()
 
+    # Load all driver names for the team
     driverI = 0
     while driverI < len(columns):
         with columns[driverI]:
             driver = st.session_state.drivenFor[st.session_state.selectedTeam][driverI][2].get_driver(st.session_state.drivenFor[st.session_state.selectedTeam][driverI][1])
 
+            # Load driver portraits if enabled
             if driverPortraits:
                 stTools.renderNamePFP(loadData.loadDriverHeadshot(st.session_state.drivenFor[st.session_state.selectedTeam][driverI][2], st.session_state.drivenFor[st.session_state.selectedTeam][driverI][1]), st.session_state.drivenFor[st.session_state.selectedTeam][driverI][0])
             else:
@@ -129,32 +140,44 @@ elif st.session_state.page == "teamView":
 
     st.markdown("<h3 style='text-align: center;'>Championship Points:</h3>", unsafe_allow_html=True)
 
+
     columns = st.session_state.drivenFor[st.session_state.selectedTeam]
-    columns = st.columns(len(st.session_state.drivenFor[st.session_state.selectedTeam]))
+    columns = st.columns(len(st.session_state.drivenFor[st.session_state.selectedTeam]), border=True)
     driverI = 0
     while driverI < len(columns):
         with columns[driverI]:
             driver = st.session_state.drivenFor[st.session_state.selectedTeam][driverI][2].get_driver(st.session_state.drivenFor[st.session_state.selectedTeam][driverI][1])
+            col1, col2 = st.columns(2)
 
-            driverPoints = 0
-            driverRacePoints = 0
-            driverSprintPoints = 0
-            for session in st.session_state.yearSessions:
-                driverResults = session.results[session.results["DriverId"] == driver["DriverId"]]
-                driverPoints += driverResults["Points"].sum()
-                driverRacePoints += driverResults["Points"].sum()
-            for session in season:
-                try:
-                    sprint = loadData.loadSession(st.session_state.loadedYear, session, "S")
-                    driverSprintPoints += sprint.results.loc[sprint.results["DriverId"] == driver["DriverId"], "Points"].sum()
-                    driverPoints += sprint.results.loc[sprint.results["DriverId"] == driver["DriverId"], "Points"].sum()
-                except ValueError:
-                    # Race has no sprint
-                    pass
+            # Display point counts
+            with col1:
+                driverPoints = 0
+                driverRacePoints = 0
+                driverSprintPoints = 0
+                for session in st.session_state.yearSessions:
+                    driverResults = session.results[session.results["DriverId"] == driver["DriverId"]]
+                    driverPoints += driverResults["Points"].sum()
+                    driverRacePoints += driverResults["Points"].sum()
+                if sprintCount != 0:
+                    for session in season:
+                        try:
+                            sprint = loadData.loadSession(st.session_state.loadedYear, session, "S")
+                            driverSprintPoints += sprint.results.loc[sprint.results["DriverId"] == driver["DriverId"], "Points"].sum()
+                            driverPoints += sprint.results.loc[sprint.results["DriverId"] == driver["DriverId"], "Points"].sum()
+                        except ValueError:
+                            # Race has no sprint
+                            pass
 
-            stTools.betterText("Total Points:<br>" + str(driverPoints))
-            stTools.betterText("Race Points:<br>" + str(driverRacePoints))
-            stTools.betterText("Sprint Points:<br>" + str(driverSprintPoints))
+                stTools.betterText("Total Points:<br>" + str(driverPoints))
+                if sprintCount != 0:
+                    stTools.betterText("Race Points:<br>" + str(driverRacePoints))
+                    stTools.betterText("Sprint Points:<br>" + str(driverSprintPoints))
+            # Display percantage of the teams points
+            with col2:
+                stTools.betterText("Percentage of Team Points:<br>" + str(round((driverPoints/teamPoints)*100, 2)))
+                if sprintCount != 0:
+                    stTools.betterText("Percentage of Points in Races:<br>" + str(round((driverRacePoints/racePoints)*100, 2)))
+                    stTools.betterText("Percentage of Points in Sprints:<br>" + str(round((driverSprintPoints/sprintPoints)*100, 2)))
 
             driverI += 1
 

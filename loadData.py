@@ -6,13 +6,14 @@ if not os.path.exists(".temp"):
     os.makedirs(".temp", exist_ok=True)
 fastf1.Cache.enable_cache(".temp")
 
-# Load Session data
+# Load session data
 def loadSession(year, race, session):
     session = fastf1.get_session(year, race, session)
     session.load(laps=False, telemetry=False, weather=False, messages=False, livedata=True)
 
     return session
 
+# Get url for selected drivers portrait
 def loadDriverHeadshot(session, driverNum):
 
     session.load()
@@ -26,6 +27,7 @@ def loadDriverHeadshot(session, driverNum):
         return False
     return headshot
 
+# Load info about all teams participating in a selection of races
 def loadTeams(year, yearSessions):
     driverCounts = {}
     drivenFor = {}
@@ -55,6 +57,7 @@ def loadTeams(year, yearSessions):
 
     return (year, driverCounts, teamNames, drivenFor)
 
+# Load all important information about a selected year
 #@st.cache_data(show_spinner="Downloading and caching season data | First load may take a few minutes...")
 def loadYear(year, loadText):
     yearSessions = []
@@ -69,6 +72,7 @@ def loadYear(year, loadText):
 
     return (yearSessions, teamData)
 
+# Return an array of races from the given year
 def loadSchedule(year):
     seasonRaces = []
     schedule = fastf1.get_event_schedule(year)
