@@ -14,9 +14,13 @@ def loadSession(year, race, session):
     return session
 
 def loadDriverHeadshot(session, driverNum):
+
+    session.load()
     sessionResult = session.results
 
     headshot = sessionResult.loc[driverNum, "HeadshotUrl"]
+
+    print(headshot)
 
     if headshot == "":
         return False
@@ -33,18 +37,19 @@ def loadTeams(year, yearSessions):
             team = race.results["TeamName"].iloc[driverI]
             driver = race.results["FullName"].iloc[driverI]
             driver = race.results["DriverId"].iloc[driverI]
+            driverNum = race.results["DriverNumber"].iloc[driverI]
 
             if team not in teamNames:
                 teamNames.append(team)
         
             if team in driverCounts.keys():
-                if driver not in drivenFor[team]:
+                if not any(listedDriver[0] == driver for listedDriver in drivenFor[team]):
                     driverCounts[team] += 1
-                    drivenFor[team].append(driver)
+                    drivenFor[team].append((driver, driverNum, race))
             else:
                 driverCounts[team] = 1
                 drivenFor[team] = []
-                drivenFor[team].append(driver)
+                drivenFor[team].append((driver, driverNum, race))
 
             driverI += 1
 
