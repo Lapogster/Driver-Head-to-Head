@@ -1,6 +1,5 @@
 import fastf1
 import streamlit as st
-#from fastf1 import plotting
 #import pandas as pd
 import os
 import loadData
@@ -93,18 +92,69 @@ elif st.session_state.page == "teamView":
     columns = st.session_state.drivenFor[st.session_state.selectedTeam]
     columns = st.columns(len(st.session_state.drivenFor[st.session_state.selectedTeam]))
 
-    print(st.session_state.drivenFor[st.session_state.selectedTeam])
+    teamPoints = 0
+    racePoints = 0
+    sprintPoints = 0
+    for session in st.session_state.yearSessions:
+        teamResults = session.results[session.results["TeamName"] == st.session_state.selectedTeam]
+        teamPoints += teamResults["Points"].sum()
+        racePoints += teamResults["Points"].sum()
+
+    season = loadData.loadSchedule(st.session_state.loadedYear)
+    loadingMessage = st.empty()
+    for session in season:
+        try:
+            stTools.loadingText("Loading Team Data...", loadingMessage)
+            sprint = loadData.loadSession(st.session_state.loadedYear, session, "S")
+            sprintPoints += sprint.results.loc[sprint.results["TeamName"] == st.session_state.selectedTeam, "Points"].sum()
+            teamPoints += sprint.results.loc[sprint.results["TeamName"] == st.session_state.selectedTeam, "Points"].sum()
+        except ValueError:
+            # Race has no sprint
+            pass
+
+    with loadingMessage:
+        st.empty()
 
     driverI = 0
     while driverI < len(columns):
         with columns[driverI]:
             driver = st.session_state.drivenFor[st.session_state.selectedTeam][driverI][2].get_driver(st.session_state.drivenFor[st.session_state.selectedTeam][driverI][1])
-            print(driver)
 
             if driverPortraits:
                 stTools.renderNamePFP(loadData.loadDriverHeadshot(st.session_state.drivenFor[st.session_state.selectedTeam][driverI][2], st.session_state.drivenFor[st.session_state.selectedTeam][driverI][1]), st.session_state.drivenFor[st.session_state.selectedTeam][driverI][0])
             else:
-                st.header(driver["FullName"])
+                st.markdown(f"<h1 style='text-align: center;'>{driver['FullName']}</h1>", unsafe_allow_html=True)
+
+            driverI += 1
+
+    st.markdown("<h3 style='text-align: center;'>Championship Points:</h3>", unsafe_allow_html=True)
+
+    columns = st.session_state.drivenFor[st.session_state.selectedTeam]
+    columns = st.columns(len(st.session_state.drivenFor[st.session_state.selectedTeam]))
+    driverI = 0
+    while driverI < len(columns):
+        with columns[driverI]:
+            driver = st.session_state.drivenFor[st.session_state.selectedTeam][driverI][2].get_driver(st.session_state.drivenFor[st.session_state.selectedTeam][driverI][1])
+
+            driverPoints = 0
+            driverRacePoints = 0
+            driverSprintPoints = 0
+            for session in st.session_state.yearSessions:
+                driverResults = session.results[session.results["DriverId"] == driver["DriverId"]]
+                driverPoints += driverResults["Points"].sum()
+                driverRacePoints += driverResults["Points"].sum()
+            for session in season:
+                try:
+                    sprint = loadData.loadSession(st.session_state.loadedYear, session, "S")
+                    driverSprintPoints += sprint.results.loc[sprint.results["DriverId"] == driver["DriverId"], "Points"].sum()
+                    driverPoints += sprint.results.loc[sprint.results["DriverId"] == driver["DriverId"], "Points"].sum()
+                except ValueError:
+                    # Race has no sprint
+                    pass
+
+            stTools.betterText("Total Points:<br>" + str(driverPoints))
+            stTools.betterText("Race Points:<br>" + str(driverRacePoints))
+            stTools.betterText("Sprint Points:<br>" + str(driverSprintPoints))
 
             driverI += 1
 

@@ -27,3 +27,6 @@ def renderNamePFP(image, name):
 
         st.image(image, width=25)
         st.text(name)
+
+def betterText(text):
+    st.markdown(f"<p style='text-align: center;'>{text}</p>", unsafe_allow_html=True)
