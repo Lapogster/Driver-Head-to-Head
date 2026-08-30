@@ -199,7 +199,7 @@ elif st.session_state.page == "teamView":
             pointsHistory[driverId].append(points[driverId])
 
     # Championship points graph
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(10, 5))
 
     cleanedSessionNames = []
     for session in sessionNames:
@@ -217,7 +217,8 @@ elif st.session_state.page == "teamView":
     ax.grid(alpha=0.3)
     ax.tick_params(axis="x", rotation=90)
 
-    st.pyplot(fig)
+    c1, col2, c3 = st.columns([1,4,1])
+    with col2:
+        st.pyplot(fig, width=2400)
 
     stTools.backButton()
-        

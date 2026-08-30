@@ -14,7 +14,7 @@ def backButton():
     if st.session_state.pageHistory == []:
         st.session_state.pageHistory.append("home")
 
-    if st.button(f"Return to {st.session_state.pageHistory[-1]}"):
+    if st.button(f"Return to {st.session_state.pageHistory[-1]}", type='primary'):
         st.session_state.page = st.session_state.pageHistory[-1]
         st.session_state.pageHistory.pop()
 
