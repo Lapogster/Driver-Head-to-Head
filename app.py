@@ -181,6 +181,5 @@ elif st.session_state.page == "teamView":
 
             driverI += 1
 
-    
     stTools.backButton()
         

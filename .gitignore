@@ -137,6 +137,9 @@ env.bak/
 venv.bak/
 
 .temp
+# submit doc
+Task5.docx
+~$Task5.docx
 
 # Spyder project settings
 .spyderproject
