@@ -140,6 +140,7 @@ venv.bak/
 # submit doc
 Task5.docx
 ~$Task5.docx
+Task5.pdf
 
 # Spyder project settings
 .spyderproject
