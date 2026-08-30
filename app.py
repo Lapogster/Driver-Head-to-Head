@@ -1,6 +1,7 @@
 import fastf1
 import streamlit as st
-#import pandas as pd
+import pandas as pd
+import matplotlib.pyplot as plt
 import os
 import loadData
 import stTools
@@ -34,6 +35,7 @@ if "selectedTeam" not in st.session_state:
     st.session_state.selectedTeam = None
 # Page Config
 st.set_page_config(page_title="Teammate Head-to-Head", page_icon="🏁", layout="wide")
+plt.style.use('dark_background')
 
 # Page display
 if st.session_state.page == "home":
@@ -174,12 +176,48 @@ elif st.session_state.page == "teamView":
                     stTools.betterText("Sprint Points:<br>" + str(driverSprintPoints))
             # Display percantage of the teams points
             with col2:
-                stTools.betterText("Percentage of Team Points:<br>" + str(round((driverPoints/teamPoints)*100, 2)))
+                stTools.betterText("Percentage of Team Points:<br>" + str(round((driverPoints/teamPoints)*100, 2)) + "%")
                 if sprintCount != 0:
-                    stTools.betterText("Percentage of Points in Races:<br>" + str(round((driverRacePoints/racePoints)*100, 2)))
-                    stTools.betterText("Percentage of Points in Sprints:<br>" + str(round((driverSprintPoints/sprintPoints)*100, 2)))
+                    stTools.betterText("Percentage of Points in Races:<br>" + str(round((driverRacePoints/racePoints)*100, 2)) + "%")
+                    stTools.betterText("Percentage of Points in Sprints:<br>" + str(round((driverSprintPoints/sprintPoints)*100, 2)) + "%")
 
             driverI += 1
+
+    drivers = st.session_state.drivenFor[st.session_state.selectedTeam]
+    points = {driverId: 0 for driverId, _, _ in drivers}
+    pointsHistory = {driverId: [] for driverId, _, _ in drivers}
+    sessionNames = []
+    for race in st.session_state.yearSessions:
+        sessionNames.append(race.event["EventName"])
+
+        for driverId, _, _ in drivers:
+            result = race.results[race.results["DriverId"] == driverId]
+
+            if not result.empty:
+                points[driverId] += float(result.iloc[0]["Points"])
+
+            pointsHistory[driverId].append(points[driverId])
+
+    # Championship points graph
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    cleanedSessionNames = []
+    for session in sessionNames:
+        cleaned = session.replace(" Grand Prix", "")
+        cleanedSessionNames.append(cleaned)
+
+    for driverId, _, _ in drivers:
+        ax.plot(cleanedSessionNames, pointsHistory[driverId], marker="o", label=driverId.replace("_", " ").title())
+
+    ax.set_xlabel("Race")
+    ax.set_ylabel("Points")
+    ax.set_title("Driver Points Comparison")
+
+    ax.legend()
+    ax.grid(alpha=0.3)
+    ax.tick_params(axis="x", rotation=90)
+
+    st.pyplot(fig)
 
     stTools.backButton()
         
